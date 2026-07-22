@@ -1,0 +1,303 @@
+.app-shell {
+  min-height: 100vh;
+  display: flex;
+  background:
+    radial-gradient(
+      circle at top right,
+      rgba(80, 120, 255, 0.08),
+      transparent 35%
+    ),
+    #080b12;
+
+  color: #f5f7fb;
+}
+
+
+/* =========================
+   SIDEBAR
+========================= */
+
+.sidebar {
+  width: 250px;
+  min-height: 100vh;
+
+  display: flex;
+  flex-direction: column;
+
+  padding: 28px 18px;
+
+  background: rgba(15, 19, 30, 0.75);
+
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+
+  backdrop-filter: blur(24px);
+}
+
+
+/* Brand */
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  padding: 0 14px;
+  margin-bottom: 42px;
+
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+}
+
+.brand-icon {
+  width: 34px;
+  height: 34px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 10px;
+
+  background: linear-gradient(
+    135deg,
+    rgba(120, 150, 255, 0.9),
+    rgba(80, 100, 220, 0.5)
+  );
+
+  box-shadow:
+    0 0 25px rgba(90, 120, 255, 0.35);
+
+  font-size: 18px;
+}
+
+
+/* Navigation */
+
+.main-navigation,
+.secondary-navigation {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+
+  padding: 12px 14px;
+
+  border-radius: 12px;
+
+  color: #8d95a8;
+
+  text-decoration: none;
+
+  font-size: 14px;
+
+  transition:
+    background 0.25s ease,
+    color 0.25s ease,
+    transform 0.25s ease;
+}
+
+
+.nav-item span {
+  width: 20px;
+  text-align: center;
+  font-size: 16px;
+}
+
+
+.nav-item:hover {
+  color: #ffffff;
+
+  background: rgba(255, 255, 255, 0.06);
+
+  transform: translateX(3px);
+}
+
+
+.nav-item.active {
+  color: #ffffff;
+
+  background:
+    linear-gradient(
+      135deg,
+      rgba(100, 125, 255, 0.2),
+      rgba(100, 125, 255, 0.05)
+    );
+
+  border: 1px solid rgba(120, 145, 255, 0.2);
+
+  box-shadow:
+    inset 0 0 20px rgba(100, 120, 255, 0.05),
+    0 0 20px rgba(80, 100, 255, 0.08);
+}
+
+
+/* Divider */
+
+.sidebar-divider {
+  height: 1px;
+
+  margin: 28px 10px;
+
+  background: rgba(255, 255, 255, 0.07);
+}
+
+
+/* Bottom */
+
+.sidebar-bottom {
+  margin-top: auto;
+}
+
+
+.user-profile {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  margin-top: 24px;
+  padding: 14px;
+
+  border-radius: 14px;
+
+  background: rgba(255, 255, 255, 0.04);
+
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+
+.user-avatar,
+.small-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 50%;
+
+  background: linear-gradient(
+    135deg,
+    #7186ff,
+    #4f5dd8
+  );
+
+  font-weight: 700;
+}
+
+
+.user-avatar {
+  width: 36px;
+  height: 36px;
+}
+
+
+.user-info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+
+.user-info strong {
+  font-size: 13px;
+}
+
+
+.user-info span {
+  color: #747d91;
+  font-size: 11px;
+}
+
+
+/* =========================
+   MAIN AREA
+========================= */
+
+.main-area {
+  flex: 1;
+  min-width: 0;
+}
+
+
+/* Header */
+
+.top-header {
+  height: 72px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  padding: 0 36px;
+
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+
+  background: rgba(8, 11, 18, 0.45);
+
+  backdrop-filter: blur(20px);
+}
+
+
+.breadcrumb {
+  color: #9ca4b6;
+  font-size: 14px;
+}
+
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+
+.icon-button {
+  width: 38px;
+  height: 38px;
+
+  border: 1px solid rgba(255, 255, 255, 0.08);
+
+  border-radius: 10px;
+
+  background: rgba(255, 255, 255, 0.04);
+
+  cursor: pointer;
+
+  transition: 0.25s ease;
+}
+
+
+.icon-button:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+
+.header-user {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  color: #d7dbe5;
+
+  font-size: 14px;
+}
+
+
+.small-avatar {
+  width: 32px;
+  height: 32px;
+
+  font-size: 13px;
+}
+
+
+/* Content */
+
+.page-content {
+  padding: 36px;
+}
