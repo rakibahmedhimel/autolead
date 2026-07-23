@@ -29,7 +29,7 @@ function Jobs() {
             setLoading(true);
 
             const response = await axios.get(
-                `http://127.0.0.1:8000/jobs/?page=${page}&limit=10`
+                `${import.meta.env.VITE_API_URL}/jobs/?page=${page}&limit=10`
             );
 
             setJobs(

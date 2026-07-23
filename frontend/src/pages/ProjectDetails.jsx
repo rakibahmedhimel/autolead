@@ -68,7 +68,7 @@ function ProjectDetails() {
 
             const response = await axios.get(
 
-                `http://127.0.0.1:8000/projects/${projectId}`
+                `${import.meta.env.VITE_API_URL}/${projectId}`
 
             );
 
@@ -101,7 +101,7 @@ function ProjectDetails() {
 
             const response = await axios.get(
 
-                `http://127.0.0.1:8000/projects/${projectId}/jobs?page=${jobsPage}&limit=10`
+                `${import.meta.env.VITE_API_URL}/${projectId}/jobs?page=${jobsPage}&limit=10`
 
             );
 
@@ -134,7 +134,7 @@ function ProjectDetails() {
 
             const response = await axios.get(
 
-                `http://127.0.0.1:8000/projects/${projectId}/companies?page=${companiesPage}&limit=10`
+                `${import.meta.env.VITE_API_URL}/${projectId}/companies?page=${companiesPage}&limit=10`
 
             );
 

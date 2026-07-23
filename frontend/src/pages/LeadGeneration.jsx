@@ -83,7 +83,7 @@ function LeadGeneration() {
         try {
 
             const response = await fetch(
-                "http://localhost:8000/projects/"
+                `${import.meta.env.VITE_API_URL}/projects/`
             );
 
 
@@ -167,7 +167,7 @@ function LeadGeneration() {
 
 
             const response = await fetch(
-                "http://localhost:8000/projects/",
+                `${import.meta.env.VITE_API_URL}/projects/`,
                 {
 
                     method: "POST",
@@ -315,7 +315,7 @@ function LeadGeneration() {
 
             const response = await fetch(
 
-                "http://localhost:8000/jobs/generate",
+                `${import.meta.env.VITE_API_URL}/jobs/generate`,
 
                 {
 

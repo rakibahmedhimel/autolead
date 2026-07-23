@@ -25,7 +25,7 @@ function JobDetails() {
         try {
 
             const response = await axios.get(
-                `http://127.0.0.1:8000/jobs/${jobId}`
+                `${import.meta.env.VITE_API_URL}/jobs/${jobId}`
             );
 
             setJob(response.data);

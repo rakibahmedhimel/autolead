@@ -14,7 +14,7 @@ function Projects() {
     async function fetchProjects() {
         try {
             const response = await axios.get(
-                "http://127.0.0.1:8000/projects"
+                `${import.meta.env.VITE_API_URL}/projects`
             );
 
             setProjects(response.data);
