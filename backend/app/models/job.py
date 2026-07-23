@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import DateTime, Integer, String, ForeignKey, ARRAY
+from sqlalchemy import Column, DateTime, Integer, String, ForeignKey, ARRAY, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from backend.app.database import Base
@@ -62,6 +62,17 @@ class Job(Base):
         ForeignKey("projects.id"),
         nullable=False
     )
+
+    firecrawl_status = Column(
+        String(50),
+        default="pending",
+        nullable=False
+    )
+
+    firecrawl_error = Column(
+        Text,
+        nullable=True
+    )    
 
     project = relationship(
         "Project",

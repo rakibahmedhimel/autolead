@@ -10,6 +10,8 @@ import About from "./pages/About";
 import Settings from "./pages/Settings";
 import ProjectDetails from "./pages/ProjectDetails";
 import JobDetails from "./pages/JobDetails";
+import LeadGeneration from "./pages/LeadGeneration";
+
 
 function App() {
   return (
@@ -21,6 +23,8 @@ function App() {
           <Route path="/" element={<Dashboard />} />
 
           <Route path="/tools" element={<Tools />} />
+
+          <Route path="/tools/lead-generation" element={<LeadGeneration />} />
 
           <Route path="/jobs" element={<Jobs />} />
 

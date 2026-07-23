@@ -1,5 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+from fastapi import Query
+from math import ceil
 
 from backend.app.database import get_db
 from backend.app.schemas.lead_request import LeadRequest
@@ -10,8 +12,10 @@ from backend.app.services.firecrawl import (
 from backend.app.models.job import Job
 from backend.app.models.company import Company
 from backend.app.schemas.job import JobResponse
-from backend.app.services.social_finder import find_social_links
-
+from backend.app.tasks.enrichment_tasks import enrich_company_socials
+from backend.app.tasks.firecrawl_tasks import (
+    process_firecrawl_job
+)
 
 router = APIRouter(
     prefix="/jobs",
@@ -25,39 +29,104 @@ def generate_job(
     db: Session = Depends(get_db)
 ):
 
-    # 1. Create our Job
+    # 1. Create Job
+
     job = Job(
+
         project_id=data.project_id,
+
         country=data.country,
+
         province=data.province,
+
         industries=data.industries,
+
         lead_count=data.lead_count,
-        status="processing"
+
+        status="processing",
+
+        firecrawl_status="pending"
+
     )
 
     db.add(job)
+
     db.commit()
+
     db.refresh(job)
 
+
     # 2. Start Firecrawl
+
     result = generate_leads(
+
         country=data.country,
+
         province=data.province,
+
         industries=data.industries,
+
         lead_count=data.lead_count
+
     )
 
-    # Save Firecrawl ID
-    job.firecrawl_job_id = result.get("id")
+
+    # 3. Save Firecrawl job ID
+
+    job.firecrawl_job_id = result.get(
+        "id"
+    )
+
+    job.firecrawl_status = "processing"
 
     db.commit()
 
+
+    # 4. Start background Firecrawl processing
+
+    process_firecrawl_job.delay(
+        job.id
+    )
+
+
+    # 5. Return immediately
+
     return {
+
         "job_id": job.id,
-        "firecrawl_job_id": result.get("id"),
+
+        "firecrawl_job_id": result.get(
+            "id"
+        ),
+
         "status": "processing"
+
     }
 
+@router.get("/")
+def get_jobs(
+    db: Session = Depends(get_db),
+    page: int = Query(1, ge=1),
+    limit: int = Query(10, ge=1, le=50)
+):
+
+    total = db.query(Job).count()
+
+    jobs = (
+        db.query(Job)
+        .order_by(Job.created_at.desc())
+        .offset((page - 1) * limit)
+        .limit(limit)
+        .all()
+    )
+
+    return {
+        "page": page,
+        "limit": limit,
+        "total": total,
+        "total_pages": ceil(total / limit) if total else 0,
+        "jobs": jobs
+    }
 
 @router.get("/{job_id}/firecrawl-status")
 def firecrawl_status(
@@ -66,26 +135,76 @@ def firecrawl_status(
 ):
 
     # 1. Find our Job
+
     job = db.query(Job).filter(
         Job.id == job_id
     ).first()
 
+
     if not job:
+
+        raise HTTPException(
+            status_code=404,
+            detail="Job not found"
+        )
+
+
+    # 2. Check Firecrawl status
+
+    try:
+
+        firecrawl_result = get_agent_status(
+            job.firecrawl_job_id
+        )
+
+    except Exception as error:
+
+        job.firecrawl_status = "failed"
+
+        job.firecrawl_error = str(error)
+
+        job.status = "failed"
+
+        db.commit()
+
+
         return {
-            "error": "Job not found"
+
+            "job_id": job.id,
+
+            "status": "failed",
+
+            "firecrawl_status": "failed",
+
+            "error": str(error)
+
         }
 
-    # 2. Check Firecrawl
-    firecrawl_result = get_agent_status(
-        job.firecrawl_job_id
-    )
 
-    # 3. If still processing
+    # 3. Firecrawl still processing
+
     if firecrawl_result.get("status") != "completed":
 
-        return firecrawl_result
+        job.firecrawl_status = "processing"
 
-    # 4. Get companies from Firecrawl
+        db.commit()
+
+
+        return {
+
+            "job_id": job.id,
+
+            "status": "processing",
+
+            "firecrawl_status": "processing",
+
+            "firecrawl": firecrawl_result
+
+        }
+
+
+    # 4. Get companies
+
     companies = firecrawl_result.get(
         "data",
         {}
@@ -94,49 +213,20 @@ def firecrawl_status(
         []
     )
 
-    # 5. Save every company
+
+    # 5. Save companies
+
     saved_companies = []
+
 
     for company_data in companies:
 
-        # --------------------------------
-        # Python Enrichment
-        # --------------------------------
-
-        website = company_data.get("website")
-
-        if website:
-
-            social_links = find_social_links(
-                website
-            )
-
-            # Only fill missing fields
-            if not company_data.get("facebook"):
-
-                company_data["facebook"] = (
-                    social_links.get("facebook")
-                )
-
-            if not company_data.get("instagram"):
-
-                company_data["instagram"] = (
-                    social_links.get("instagram")
-                )
-
-            if not company_data.get("linkedin"):
-
-                company_data["linkedin"] = (
-                    social_links.get("linkedin")
-                )
-
-        # --------------------------------
-        # Save Company
-        # --------------------------------
 
         company = Company(
 
             job_id=job.id,
+
+            enrichment_status="pending",
 
             company_name=company_data.get(
                 "company_name"
@@ -193,24 +283,50 @@ def firecrawl_status(
             services=company_data.get(
                 "services"
             )
+
         )
+
 
         db.add(company)
 
-        saved_companies.append(
-            company
-        )
+        saved_companies.append(company)
 
-    # 6. Update Job status
+
+    # 6. Update Firecrawl status
+
+    job.firecrawl_status = "completed"
+
+    job.firecrawl_error = None
+
     job.status = "completed"
+
 
     db.commit()
 
+
+    # 7. Start Python enrichment
+
+    for company in saved_companies:
+
+        enrich_company_socials.delay(
+            company.id
+        )
+
+
     return {
+
         "job_id": job.id,
+
         "status": "completed",
-        "companies_saved": len(saved_companies),
+
+        "firecrawl_status": "completed",
+
+        "companies_saved": len(
+            saved_companies
+        ),
+
         "companies": companies
+
     }
 
 @router.get("/{job_id}", response_model=JobResponse)

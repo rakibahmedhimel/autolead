@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from fastapi import Query
 from math import ceil
@@ -101,4 +101,75 @@ def get_project_companies(
         "total": total,
         "total_pages": ceil(total / limit) if total else 0,
         "companies": companies
+    }
+
+@router.get("/{project_id}/jobs")
+def get_project_jobs(
+    project_id: int,
+    db: Session = Depends(get_db),
+    page: int = Query(1, ge=1),
+    limit: int = Query(10, ge=1, le=100)
+):
+
+    project = (
+        db.query(Project)
+        .filter(Project.id == project_id)
+        .first()
+    )
+
+    if not project:
+
+        raise HTTPException(
+            status_code=404,
+            detail="Project not found"
+        )
+
+
+    total = (
+        db.query(Job)
+        .filter(
+            Job.project_id == project_id
+        )
+        .count()
+    )
+
+
+    jobs = (
+
+        db.query(Job)
+
+        .filter(
+            Job.project_id == project_id
+        )
+
+        .order_by(
+            Job.created_at.desc()
+        )
+
+        .offset(
+            (page - 1) * limit
+        )
+
+        .limit(limit)
+
+        .all()
+
+    )
+
+
+    return {
+
+        "page": page,
+
+        "limit": limit,
+
+        "total": total,
+
+        "total_pages":
+            ceil(total / limit)
+            if total
+            else 0,
+
+        "jobs": jobs
+
     }

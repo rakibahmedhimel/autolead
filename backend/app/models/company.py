@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy import DateTime, ForeignKey, Integer, String, Text, Column
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from backend.app.database import Base
@@ -97,7 +97,15 @@ class Company(Base):
         nullable=False
     )
 
+    enrichment_status = Column(
+            String(50),
+            default="pending",
+            nullable=False
+        )
+
     job = relationship(
         "Job",
         back_populates="companies"
     )
+
+    

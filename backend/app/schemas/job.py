@@ -18,6 +18,10 @@ class JobResponse(BaseModel):
 
     status: str
 
+    firecrawl_status: str
+
+    firecrawl_error: str | None
+
     created_at: datetime
 
     companies: list[CompanyResponse] = []
