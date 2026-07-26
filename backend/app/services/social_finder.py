@@ -76,10 +76,5 @@ def find_social_links(website: str) -> dict:
 
         return result
 
-    except requests.RequestException as error:
-
-        print(
-            f"Social link extraction failed: {error}"
-        )
-
-        return result
+    except requests.RequestException:
+        raise

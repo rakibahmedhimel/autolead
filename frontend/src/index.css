@@ -1563,6 +1563,86 @@ button {
     border-color: var(--accent);
     background: rgba(255, 255, 255, 0.08);
 }
+
+.active-job-panel,
+.refresh-summary,
+.enrichment-progress,
+.firecrawl-timeline {
+    margin-top: 24px;
+    padding: 22px 26px;
+}
+
+.active-job-panel {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 24px;
+}
+
+.active-job-actions,
+.job-detail-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+}
+
+.active-job-actions .secondary-button {
+    display: inline-flex;
+    align-items: center;
+    text-decoration: none;
+}
+
+.firecrawl-timeline {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 24px;
+}
+
+.timeline-step {
+    padding: 12px;
+    border-radius: 10px;
+    color: var(--text-muted);
+    background: rgba(255, 255, 255, 0.04);
+    text-align: center;
+    text-transform: capitalize;
+}
+
+.timeline-step.completed { color: #9be7bd; background: rgba(88, 200, 140, 0.1); }
+.timeline-step.processing { color: #ffd580; background: rgba(255, 190, 80, 0.1); }
+.timeline-step.failed { color: #ff9292; background: rgba(255, 80, 80, 0.1); }
+
+.enrichment-badge {
+    margin-left: auto;
+    padding: 5px 8px;
+    border-radius: 999px;
+    color: var(--text-muted);
+    background: rgba(255, 255, 255, 0.06);
+    font-size: 10px;
+    text-transform: uppercase;
+}
+
+.enrichment-badge.completed { color: #9be7bd; }
+.enrichment-badge.failed { color: #ff9292; }
+.enrichment-badge.processing { color: #ffd580; }
+
+@media (max-width: 800px) {
+    .active-job-panel,
+    .job-details-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .firecrawl-timeline {
+        grid-template-columns: 1fr;
+    }
+
+    .jobs-page,
+    .tools-page {
+        padding: 40px 20px;
+    }
+}
 .modal-overlay {
     position: fixed;
     inset: 0;

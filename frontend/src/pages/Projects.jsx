@@ -1,6 +1,7 @@
+/* eslint-disable react-hooks/immutability */
 import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
-import axios from "axios";
+import api from "../api/client";
 
 function Projects() {
     const [projects, setProjects] = useState([]);
@@ -13,8 +14,8 @@ function Projects() {
 
     async function fetchProjects() {
         try {
-            const response = await axios.get(
-                `${import.meta.env.VITE_API_URL}/projects`
+            const response = await api.get(
+                `/projects`
             );
 
             setProjects(response.data);

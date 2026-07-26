@@ -17,7 +17,7 @@ class Job(Base):
 
     province: Mapped[str] = mapped_column(
         String(100),
-        nullable=False
+        nullable=True
     )
 
     country: Mapped[str] = mapped_column(

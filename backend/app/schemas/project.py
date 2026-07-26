@@ -23,6 +23,7 @@ class CompanyResponse(BaseModel):
     company_size: str | None = None
     contact_page: str | None = None
     services: str | None = None
+    enrichment_status: str
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -34,6 +35,8 @@ class JobResponse(BaseModel):
     industries: list[str]
     lead_count: int
     status: str
+    firecrawl_status: str
+    firecrawl_error: str | None = None
     created_at: datetime
     companies: list[CompanyResponse] = []
 

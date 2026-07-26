@@ -1,6 +1,7 @@
+/* eslint-disable react-hooks/immutability, react-hooks/exhaustive-deps */
 import { Link, useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
-import axios from "axios";
+import api from "../api/client";
 
 
 function ProjectDetails() {
@@ -26,6 +27,8 @@ function ProjectDetails() {
 
     const [companiesTotalPages, setCompaniesTotalPages] =
         useState(0);
+    const [jobsTotal, setJobsTotal] = useState(0);
+    const [companiesTotal, setCompaniesTotal] = useState(0);
 
 
     const [loading, setLoading] =
@@ -66,9 +69,9 @@ function ProjectDetails() {
 
         try {
 
-            const response = await axios.get(
+            const response = await api.get(
 
-                `${import.meta.env.VITE_API_URL}/${projectId}`
+                `/projects/${projectId}`
 
             );
 
@@ -99,9 +102,9 @@ function ProjectDetails() {
 
         try {
 
-            const response = await axios.get(
+            const response = await api.get(
 
-                `${import.meta.env.VITE_API_URL}/${projectId}/jobs?page=${jobsPage}&limit=10`
+                `/projects/${projectId}/jobs?page=${jobsPage}&limit=10`
 
             );
 
@@ -114,6 +117,7 @@ function ProjectDetails() {
             setJobsTotalPages(
                 response.data.total_pages
             );
+            setJobsTotal(response.data.total);
 
 
         } catch (error) {
@@ -132,9 +136,9 @@ function ProjectDetails() {
 
         try {
 
-            const response = await axios.get(
+            const response = await api.get(
 
-                `${import.meta.env.VITE_API_URL}/${projectId}/companies?page=${companiesPage}&limit=10`
+                `/projects/${projectId}/companies?page=${companiesPage}&limit=10`
 
             );
 
@@ -147,6 +151,7 @@ function ProjectDetails() {
             setCompaniesTotalPages(
                 response.data.total_pages
             );
+            setCompaniesTotal(response.data.total);
 
 
         } catch (error) {
@@ -302,7 +307,7 @@ function ProjectDetails() {
 
                 <Link
 
-                    to="/tools/lead-generation"
+                    to={`/tools/lead-generation?projectId=${project.id}`}
 
                     className="crystal-button"
 
@@ -377,7 +382,7 @@ function ProjectDetails() {
 
                     <strong>
 
-                        {jobs.length}
+                        {jobsTotal}
 
                     </strong>
 
@@ -397,7 +402,7 @@ function ProjectDetails() {
 
                     <strong>
 
-                        {companies.length}
+                        {companiesTotal}
 
                     </strong>
 
@@ -445,7 +450,7 @@ function ProjectDetails() {
 
                     <Link
 
-                        to="/tools/lead-generation"
+                        to={`/tools/lead-generation?projectId=${project.id}`}
 
                         className="crystal-button"
 

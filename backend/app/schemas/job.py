@@ -7,6 +7,7 @@ from backend.app.schemas.companies import CompanyResponse
 class JobResponse(BaseModel):
 
     id: int
+    project_id: int
 
     country: str
 

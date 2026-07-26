@@ -56,9 +56,7 @@ def get_project(
     ).first()
 
     if not project:
-        return {
-            "error": "Project not found"
-        }
+        raise HTTPException(status_code=404, detail="Project not found")
 
     return project
 
@@ -75,14 +73,13 @@ def get_project_companies(
     ).first()
 
     if not project:
-        return {
-            "error": "Project not found"
-        }
+        raise HTTPException(status_code=404, detail="Project not found")
 
     total = (
         db.query(Company)
         .join(Job)
         .filter(Job.project_id == project_id)
+        .order_by(Company.created_at.desc())
         .count()
     )
 

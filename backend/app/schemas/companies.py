@@ -32,6 +32,7 @@ class CompanyResponse(BaseModel):
     contact_page: str | None
 
     services: str | None
+    enrichment_status: str
 
     class Config:
         from_attributes = True
