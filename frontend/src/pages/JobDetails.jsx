@@ -2,112 +2,28 @@
 import { Link, useParams } from "react-router-dom";
 import { useCallback, useEffect, useState } from "react";
 import api, { apiError } from "../api/client";
+import LoadingScreen from "../components/LoadingScreen";
+import CompanyResults, { downloadCompaniesCsv } from "../components/CompanyResults";
+import Toast from "../components/Toast";
 
-function JobDetails() {
-    const { jobId, projectId } = useParams();
-    const [job, setJob] = useState(null);
-    const [companies, setCompanies] = useState([]);
-    const [companyPage, setCompanyPage] = useState(1);
-    const [companyTotal, setCompanyTotal] = useState(0);
-    const [companyPages, setCompanyPages] = useState(0);
-    const [progress, setProgress] = useState(null);
-    const [loading, setLoading] = useState(true);
-    const [refreshing, setRefreshing] = useState(false);
-    const [enriching, setEnriching] = useState(false);
-    const [notice, setNotice] = useState("");
-    const [error, setError] = useState("");
-
-    const fetchCompanies = useCallback(async () => {
-        const { data } = await api.get(`/jobs/${jobId}/companies?page=${companyPage}&limit=9`);
-        setCompanies(data.companies); setCompanyTotal(data.total); setCompanyPages(data.total_pages);
-    }, [jobId, companyPage]);
-
-    const load = useCallback(async () => {
-        try {
-            setError("");
-            const [{ data }] = await Promise.all([
-                api.get(`/jobs/${jobId}`), fetchCompanies(),
-            ]);
-            setJob(data);
-            if (data.status === "completed") {
-                const response = await api.get(`/jobs/${jobId}/enrichment-progress`);
-                setProgress(response.data);
-            }
-        } catch (err) {
-            setError(apiError(err, "Unable to load job details."));
-        } finally {
-            setLoading(false);
-        }
-    }, [jobId, fetchCompanies]);
-
-    useEffect(() => { load(); }, [load]);
-
-    async function refreshJob() {
-        try {
-            setRefreshing(true); setError("");
-            const { data } = await api.post(`/jobs/${jobId}/refresh`);
-            setNotice(data.status === "completed" ? `${data.companies_saved} new companies saved.` : "Firecrawl is still processing.");
-            await load();
-        } catch (err) { setError(apiError(err, "Unable to refresh this job.")); }
-        finally { setRefreshing(false); }
-    }
-
-    async function enrich() {
-        try {
-            setEnriching(true); setError("");
-            const { data } = await api.post(`/jobs/${jobId}/enrich?limit=5`);
-            setNotice(`Enrichment processed ${data.processed}; ${data.remaining} remain.`);
-            await load();
-        } catch (err) { setError(apiError(err, "Unable to enrich companies.")); }
-        finally { setEnriching(false); }
-    }
-
-    if (loading) return <main className="job-details-page"><div className="eyebrow">AUTOLEAD / JOB</div><h1>Loading job...</h1></main>;
-    if (!job) return <main className="job-details-page"><h1>Job not found</h1><p className="error-message">{error}</p><Link to="/jobs">← Back to Jobs</Link></main>;
-
-    return (
-        <main className="job-details-page">
-            <Link to={projectId ? `/projects/${projectId}` : "/jobs"} className="back-link">← Back to {projectId ? "Project" : "Jobs"}</Link>
-            <div className="job-details-header"><div><div className="eyebrow">AUTOLEAD / JOB</div><h1>Job #{job.id}</h1>
-                <p>{job.country}{job.province ? ` · ${job.province}` : ""}</p></div>
-                <div className="job-detail-actions">
-                    {job.status !== "completed" && <button className="crystal-button" onClick={refreshJob} disabled={refreshing}>{refreshing ? "Refreshing..." : "Refresh Status"}</button>}
-                    {job.status === "completed" && companyTotal > 0 && <button className="crystal-button" onClick={enrich} disabled={enriching}>{enriching ? "Enriching..." : "Enrich Missing Social Links"}</button>}
-                    <span className={`job-status-badge ${job.status}`}>{job.status}</span>
-                </div>
-            </div>
-            {error && <p className="error-message">{error}</p>}{notice && <div className="glass-card refresh-summary">{notice}</div>}
-            {job.firecrawl_error && <div className="job-error">{job.firecrawl_error}</div>}
-            <section className="firecrawl-timeline glass-card">
-                <div className="timeline-step completed">Job created</div>
-                <div className={`timeline-step ${job.firecrawl_status === "processing" ? "processing" : job.firecrawl_status}`}>Firecrawl {job.firecrawl_status}</div>
-                <div className={`timeline-step ${job.status}`}>Results {job.status}</div>
-            </section>
-            <section className="job-info-grid">
-                <div className="glass-card job-info-card"><span>Industries</span><strong>{job.industries.join(", ")}</strong></div>
-                <div className="glass-card job-info-card"><span>Target Leads</span><strong>{job.lead_count}</strong></div>
-                <div className="glass-card job-info-card"><span>Companies Found</span><strong>{companyTotal}</strong></div>
-            </section>
-            {progress && <div className="glass-card enrichment-progress">Enrichment: {progress.completed} completed · {progress.pending} pending · {progress.failed} failed · {progress.skipped} skipped</div>}
-            <section className="companies-section"><div className="section-header"><div><div className="eyebrow">RESULTS</div><h2>Companies</h2>
-                <p>Businesses discovered by this lead generation job.</p></div></div>
-                <div className="companies-grid">{companies.map((company) => (
-                    <div key={company.id} className="company-card glass-card">
-                        <div className="company-card-header"><div className="company-symbol">{company.company_name?.charAt(0).toUpperCase()}</div>
-                            <div><h3>{company.company_name}</h3><span>{company.industry}</span></div>
-                            <span className={`enrichment-badge ${company.enrichment_status}`}>{company.enrichment_status}</span></div>
-                        <div className="company-details">{company.email && <p>✉ {company.email}</p>}{company.phone && <p>☎ {company.phone}</p>}
-                            {company.headquarters && <p>Location: {company.headquarters}</p>}</div>
-                        <div className="company-actions">{["website", "linkedin", "facebook", "instagram"].map((field) => company[field] && (
-                            <a key={field} href={company[field]} target="_blank" rel="noreferrer" className="company-action-button">{field[0].toUpperCase() + field.slice(1)}</a>
-                        ))}</div>
-                    </div>
-                ))}</div>
-                {companyPages > 1 && <div className="pagination"><button className="pagination-button" disabled={companyPage === 1} onClick={() => setCompanyPage((p) => p - 1)}>← Previous</button>
-                    <span>Page {companyPage} of {companyPages}</span><button className="pagination-button" disabled={companyPage === companyPages} onClick={() => setCompanyPage((p) => p + 1)}>Next →</button></div>}
-            </section>
-        </main>
-    );
+export default function JobDetails(){
+ const{jobId,projectId}=useParams(),[job,setJob]=useState(null),[companies,setCompanies]=useState([]),[page,setPage]=useState(1),[total,setTotal]=useState(0),[pages,setPages]=useState(0),[progress,setProgress]=useState(null);
+ const[loading,setLoading]=useState(true),[refreshing,setRefreshing]=useState(false),[enriching,setEnriching]=useState(false),[downloading,setDownloading]=useState(false),[error,setError]=useState(""),[toast,setToast]=useState(null);
+ const loadCompanies=useCallback(async()=>{const{data}=await api.get(`/jobs/${jobId}/companies?page=${page}&limit=10`);setCompanies(data.companies);setTotal(data.total);setPages(data.total_pages)},[jobId,page]);
+ const load=useCallback(async()=>{try{setError("");const[{data}]=await Promise.all([api.get(`/jobs/${jobId}`),loadCompanies()]);setJob(data);if(data.status==="completed"){try{const p=await api.get(`/jobs/${jobId}/enrichment-progress`);setProgress(p.data)}catch{/* progress is optional */}}}catch(e){setError(apiError(e,"Unable to load job details."));}finally{setLoading(false)}},[jobId,loadCompanies]);
+ useEffect(()=>{load();},[load]);
+ async function refresh(){try{setRefreshing(true);const{data}=await api.post(`/jobs/${jobId}/refresh`);await load();setToast({title:"Job status refreshed.",body:`Latest status: ${data.status||data.firecrawl_status||"updated"}.`});}catch(e){setToast({type:"error",title:"Refresh failed",body:apiError(e)});}finally{setRefreshing(false)}}
+ async function enrich(){try{setEnriching(true);const{data}=await api.post(`/jobs/${jobId}/enrich?limit=5`);await load();const done=data.processed??data.completed??0,remaining=data.remaining??0;setToast({title:"Enrichment updated",body:`${done} companies enriched · ${remaining} remaining`});}catch(e){setToast({type:"error",title:"Enrichment failed",body:apiError(e)});}finally{setEnriching(false)}}
+ async function download(){try{setDownloading(true);const rows=[];let current=1,last=1;do{const{data}=await api.get(`/jobs/${jobId}/companies?page=${current}&limit=100`);rows.push(...data.companies);last=data.total_pages;current+=1;}while(current<=last);downloadCompaniesCsv(rows,`AutoLead_Job_${jobId}_Companies.csv`);setToast({title:"Download ready",body:`Exported ${rows.length} companies.`});}catch(e){setToast({type:"error",title:"Download failed",body:apiError(e)});}finally{setDownloading(false)}}
+ if(loading)return <main className="job-details-page"><LoadingScreen/></main>;if(!job)return <main className="job-details-page"><h1>Job not found</h1><p className="error-message">{error}</p></main>;
+ const retry=(progress?.failed||0)>0||((progress?.pending||0)>0&&(progress?.processing||0)===0);
+ return <main className="job-details-page"><Link to={projectId?`/projects/${projectId}`:"/jobs"} className="back-link">← Back to {projectId?"Project":"Jobs"}</Link>
+  <div className="job-details-header"><div><div className="eyebrow">AUTOLEAD / JOB</div><h1>Job #{job.id}</h1><p>{job.country}{job.province?` · ${job.province}`:""}</p></div><div className="job-detail-actions">
+   {job.status!=="completed"&&<button className="crystal-button" onClick={refresh} disabled={refreshing}>{refreshing?"Refreshing...":"Refresh Status"}</button>}
+   {retry&&<button className="secondary-button" onClick={enrich} disabled={enriching}>{enriching?"Retrying...":"Retry Unfinished Enrichment"}</button>}
+   <button className="secondary-button" onClick={download} disabled={downloading||!total}>{downloading?"Preparing Sheet...":"Download Sheet"}</button><span className={`job-status-badge ${job.status}`}>{job.status}</span></div></div>
+  {error&&<p className="error-message">{error}</p>}{job.firecrawl_error&&<div className="job-error">{job.firecrawl_error}</div>}
+  <section className="firecrawl-timeline glass-card"><div className="timeline-step completed">Job created</div><div className={`timeline-step ${job.firecrawl_status}`}>Firecrawl {job.firecrawl_status}</div><div className={`timeline-step ${job.status}`}>Results {job.status}</div></section>
+  <section className="job-info-grid"><div className="glass-card job-info-card"><span>Industries</span><strong>{job.industries.join(", ")}</strong></div><div className="glass-card job-info-card"><span>Target Leads</span><strong>{job.lead_count}</strong></div><div className="glass-card job-info-card"><span>Companies Found</span><strong>{total}</strong></div></section>
+  <CompanyResults companies={companies} total={total} page={page} totalPages={pages} onPageChange={setPage} progress={progress}/><Toast toast={toast} onClose={()=>setToast(null)}/></main>
 }
-
-export default JobDetails;

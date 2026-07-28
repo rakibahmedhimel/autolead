@@ -22,10 +22,9 @@ def find_social_links(website: str) -> dict:
         return result
 
     try:
-
         response = requests.get(
             website,
-            timeout=15,
+            timeout=(4, 8),
             headers={
                 "User-Agent": (
                     "Mozilla/5.0 "
@@ -33,45 +32,29 @@ def find_social_links(website: str) -> dict:
                     "AppleWebKit/537.36 "
                     "Chrome/120 Safari/537.36"
                 )
-            }
+            },
         )
 
         response.raise_for_status()
 
-        soup = BeautifulSoup(
-            response.text,
-            "html.parser"
-        )
+        soup = BeautifulSoup(response.text, "html.parser")
 
         links = soup.find_all("a", href=True)
 
         for link in links:
-
             href = link["href"].strip()
 
-            href = urljoin(
-                website,
-                href
-            )
+            href = urljoin(website, href)
 
             href_lower = href.lower()
 
-            if (
-                "facebook.com" in href_lower
-                and not result["facebook"]
-            ):
+            if "facebook.com" in href_lower and not result["facebook"]:
                 result["facebook"] = href
 
-            elif (
-                "instagram.com" in href_lower
-                and not result["instagram"]
-            ):
+            elif "instagram.com" in href_lower and not result["instagram"]:
                 result["instagram"] = href
 
-            elif (
-                "linkedin.com" in href_lower
-                and not result["linkedin"]
-            ):
+            elif "linkedin.com" in href_lower and not result["linkedin"]:
                 result["linkedin"] = href
 
         return result

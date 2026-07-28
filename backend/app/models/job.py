@@ -60,10 +60,10 @@ class Job(Base):
     )    
 
     project_id: Mapped[int] = mapped_column(
-        ForeignKey("projects.id"),
+        ForeignKey("projects.id", ondelete="CASCADE"),
         nullable=False
     )
-    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False, index=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     idempotency_key: Mapped[str | None] = mapped_column(String(100), nullable=True)
     tool_type: Mapped[str] = mapped_column(String(50), nullable=False, default="lead_generation")
 

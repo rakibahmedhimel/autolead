@@ -28,7 +28,7 @@ api.interceptors.response.use(
 
 export function apiError(error, fallback = "Something went wrong.") {
     if (error.code === "ECONNABORTED") {
-        return "The server is taking longer than expected. Render may be waking up; please try again.";
+        return "The server is taking longer than expected; please try again.";
     }
     const status = error.response?.status;
     const detail = error.response?.data?.detail;

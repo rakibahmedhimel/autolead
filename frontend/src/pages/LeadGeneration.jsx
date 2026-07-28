@@ -184,7 +184,7 @@ function LeadGeneration() {
                 </div>
                 <div className="active-job-actions">
                     {activeJob.status !== "completed" && <button className="crystal-button" onClick={refreshJob} disabled={refreshing}>{refreshing ? "Refreshing..." : "Refresh Status"}</button>}
-                    {activeJob.status === "completed" && <button className="crystal-button" onClick={enrichJob} disabled={enriching}>{enriching ? "Enriching..." : "Enrich Missing Social Links"}</button>}
+                    {activeJob.status === "completed" && enrichment && ((enrichment.failed || 0) > 0 || ((enrichment.remaining || 0) > 0 && (enrichment.processing || 0) === 0)) && <button className="secondary-button" onClick={enrichJob} disabled={enriching}>{enriching ? "Retrying..." : "Retry Unfinished Enrichment"}</button>}
                     <Link className="secondary-button" to="/jobs">View Jobs</Link>
                     <Link className="secondary-button" to={`/jobs/${activeJob.job_id}`}>View Job Details</Link>
                 </div>

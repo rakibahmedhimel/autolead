@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from backend.app.config import FRONTEND_URL
 from backend.app.routers.projects import router as projects_router
 from backend.app.routers.jobs import router as job_router
 from backend.app.routers.auth import router as auth_router
@@ -12,15 +13,12 @@ from backend.app import models
 app = FastAPI()
 
 origins = [
-
     "http://localhost:3000",
-
     "http://localhost:5173",
-
-    "https://autolead-pearl.vercel.app"
-
+    "https://autolead-pearl.vercel.app",
 ]
-
+if FRONTEND_URL and FRONTEND_URL not in origins:
+    origins.append(FRONTEND_URL)
 
 app.add_middleware(
 

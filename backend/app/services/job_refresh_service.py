@@ -19,7 +19,11 @@ def safe_error(error) -> str:
 
 
 def _company_key(company: dict) -> tuple[str, str]:
-    website = (company.get("website") or company.get("official_website") or "").strip().lower()
+    website = (
+        (company.get("website") or company.get("official_website") or "")
+        .strip()
+        .lower()
+    )
     if website:
         parsed = urlsplit(website if "://" in website else f"https://{website}")
         host = (parsed.hostname or website).removeprefix("www.")
@@ -40,9 +44,11 @@ def refresh_job(db: Session, job: Job) -> dict:
     existing_count = db.query(Company).filter(Company.job_id == job.id).count()
     if job.status == "completed" and existing_count:
         return {
-            "job_id": job.id, "status": job.status,
+            "job_id": job.id,
+            "status": job.status,
             "firecrawl_status": job.firecrawl_status,
-            "companies_saved": 0, "total_companies": existing_count,
+            "companies_saved": 0,
+            "total_companies": existing_count,
         }
 
     if not job.firecrawl_job_id:
@@ -50,15 +56,22 @@ def refresh_job(db: Session, job: Job) -> dict:
         job.firecrawl_error = "This job has no Firecrawl agent ID."
         db.commit()
         return {
-            "job_id": job.id, "status": "failed", "firecrawl_status": "failed",
-            "companies_saved": 0, "total_companies": existing_count,
+            "job_id": job.id,
+            "status": "failed",
+            "firecrawl_status": "failed",
+            "companies_saved": 0,
+            "total_companies": existing_count,
             "error": job.firecrawl_error,
         }
 
     try:
-        key_row = db.query(UserApiKey).filter(
-            UserApiKey.user_id == job.user_id, UserApiKey.provider == "firecrawl"
-        ).first()
+        key_row = (
+            db.query(UserApiKey)
+            .filter(
+                UserApiKey.user_id == job.user_id, UserApiKey.provider == "firecrawl"
+            )
+            .first()
+        )
         api_key = decrypt_key(key_row.encrypted_key) if key_row else None
         if not api_key and not SYSTEM_FIRECRAWL_FALLBACK_ENABLED:
             raise RuntimeError("No Firecrawl API key is configured for this account")
@@ -69,19 +82,28 @@ def refresh_job(db: Session, job: Job) -> dict:
             job.firecrawl_error = None
             db.commit()
             return {
-                "job_id": job.id, "status": "processing",
-                "firecrawl_status": "processing", "companies_saved": 0,
+                "job_id": job.id,
+                "status": "processing",
+                "firecrawl_status": "processing",
+                "companies_saved": 0,
                 "total_companies": existing_count,
             }
 
         if status != "completed":
-            message = result.get("error") or result.get("message") or f"Firecrawl ended with status: {status}"
+            message = (
+                result.get("error")
+                or result.get("message")
+                or f"Firecrawl ended with status: {status}"
+            )
             job.status = job.firecrawl_status = "failed"
             job.firecrawl_error = safe_error(message)
             db.commit()
             return {
-                "job_id": job.id, "status": "failed", "firecrawl_status": "failed",
-                "companies_saved": 0, "total_companies": existing_count,
+                "job_id": job.id,
+                "status": "failed",
+                "firecrawl_status": "failed",
+                "companies_saved": 0,
+                "total_companies": existing_count,
                 "error": job.firecrawl_error,
             }
 
@@ -92,9 +114,19 @@ def refresh_job(db: Session, job: Job) -> dict:
         }
         saved = 0
         fields = (
-            "company_name", "industry", "linkedin", "facebook", "instagram",
-            "owner", "ceo", "email", "phone", "headquarters", "company_size",
-            "contact_page", "services",
+            "company_name",
+            "industry",
+            "linkedin",
+            "facebook",
+            "instagram",
+            "owner",
+            "ceo",
+            "email",
+            "phone",
+            "headquarters",
+            "company_size",
+            "contact_page",
+            "services",
         )
         for item in _companies_from_result(result):
             key = _company_key(item)
@@ -113,8 +145,10 @@ def refresh_job(db: Session, job: Job) -> dict:
         db.commit()
         total = db.query(Company).filter(Company.job_id == job.id).count()
         return {
-            "job_id": job.id, "status": "completed",
-            "firecrawl_status": "completed", "companies_saved": saved,
+            "job_id": job.id,
+            "status": "completed",
+            "firecrawl_status": "completed",
+            "companies_saved": saved,
             "total_companies": total,
         }
     except Exception as error:
@@ -124,7 +158,10 @@ def refresh_job(db: Session, job: Job) -> dict:
         job.firecrawl_error = safe_error(error)
         db.commit()
         return {
-            "job_id": job.id, "status": "failed", "firecrawl_status": "failed",
-            "companies_saved": 0, "total_companies": existing_count,
+            "job_id": job.id,
+            "status": "failed",
+            "firecrawl_status": "failed",
+            "companies_saved": 0,
+            "total_companies": existing_count,
             "error": job.firecrawl_error,
         }

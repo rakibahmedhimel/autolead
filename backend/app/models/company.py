@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import DateTime, ForeignKey, Integer, String, Text, Column
+from sqlalchemy import DateTime, ForeignKey, Integer, String, Text, Column, Index, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from backend.app.database import Base
@@ -108,4 +108,17 @@ class Company(Base):
         back_populates="companies"
     )
 
-    
+Index(
+    "uq_company_job_website",
+    Company.job_id,
+    func.lower(Company.website),
+    unique=True,
+    postgresql_where=Company.website.is_not(None),
+)
+Index(
+    "uq_company_job_name_without_website",
+    Company.job_id,
+    func.lower(Company.company_name),
+    unique=True,
+    postgresql_where=Company.website.is_(None),
+)
