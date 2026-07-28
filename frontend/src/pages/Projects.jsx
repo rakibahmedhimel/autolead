@@ -95,9 +95,9 @@ function Projects() {
                 </div>
 
 
-                <button className="crystal-button">
+                <Link to="/tools/lead-generation" className="crystal-button">
                     + New Project
-                </button>
+                </Link>
 
             </div>
 
@@ -164,7 +164,7 @@ function Projects() {
 
                 {/* Create project card */}
 
-                <div className="project-card glass-card create-project-card">
+                <Link to="/tools/lead-generation" className="project-card glass-card create-project-card">
 
                     <div className="create-project-icon">
                         +
@@ -180,7 +180,7 @@ function Projects() {
                         Start organizing a new lead generation campaign.
                     </p>
 
-                </div>
+                </Link>
 
             </section>
 

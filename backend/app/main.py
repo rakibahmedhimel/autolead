@@ -1,12 +1,13 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from backend.app.database import engine, Base
-
 from backend.app.routers.projects import router as projects_router
 from backend.app.routers.jobs import router as job_router
+from backend.app.routers.auth import router as auth_router
+from backend.app.routers.dashboard import router as dashboard_router
+from backend.app.routers.settings import router as settings_router
+from backend.app.routers.submissions import router as submissions_router
+from backend.app.routers.spreadsheets import router as spreadsheets_router
 from backend.app import models
-
-Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 
@@ -38,3 +39,8 @@ app.add_middleware(
 
 app.include_router(job_router)
 app.include_router(projects_router)
+app.include_router(auth_router)
+app.include_router(dashboard_router)
+app.include_router(settings_router)
+app.include_router(submissions_router)
+app.include_router(spreadsheets_router)

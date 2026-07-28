@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import Column, DateTime, Integer, String, ForeignKey, ARRAY, Text
+from sqlalchemy import Column, DateTime, Integer, String, ForeignKey, ARRAY, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from backend.app.database import Base
@@ -8,6 +8,7 @@ from backend.app.database import Base
 
 class Job(Base):
     __tablename__ = "jobs"
+    __table_args__ = (UniqueConstraint("user_id", "idempotency_key", name="uq_job_user_idempotency"),)
 
     id: Mapped[int] = mapped_column(
         Integer,
@@ -62,6 +63,9 @@ class Job(Base):
         ForeignKey("projects.id"),
         nullable=False
     )
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False, index=True)
+    idempotency_key: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    tool_type: Mapped[str] = mapped_column(String(50), nullable=False, default="lead_generation")
 
     firecrawl_status = Column(
         String(50),
@@ -77,4 +81,5 @@ class Job(Base):
     project = relationship(
         "Project",
         back_populates="jobs"
-    )    
+    )
+    user = relationship("User", back_populates="jobs")

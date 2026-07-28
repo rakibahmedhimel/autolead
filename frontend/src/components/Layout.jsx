@@ -1,128 +1,30 @@
-import { NavLink, Outlet } from "react-router-dom";
+import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import { useState } from "react";
+import { useAuth } from "../auth/AuthContext";
 import "../style/Layout.css";
 
-function Layout() {
-  return (
-    <div className="app-shell">
+const links = [
+  ["/","Dashboard","◇"],["/tools","Tools","⚡"],["/tools/lead-generation","Lead Generation","✦"],
+  ["/tools/spreadsheet-enrichment","Spreadsheet Enrichment","▦"],["/projects","Projects","▣"],
+  ["/jobs","Jobs","◉"],["/settings","Settings","⚙"],["/contact","Contact","✉"],
+  ["/request-tool","Request Tool","＋"],["/about","About","ⓘ"],
+];
 
-      {/* Sidebar */}
-      <aside className="sidebar">
-
-        <div className="brand">
-          <div className="brand-icon">◈</div>
-          <span>AutoLead</span>
-        </div>
-
-        <nav className="main-navigation">
-
-          <NavLink to="/" className="nav-item">
-            <span>◈</span>
-            Dashboard
-          </NavLink>
-
-          <NavLink to="/tools" className="nav-item">
-            <span>⚡</span>
-            Tools
-          </NavLink>
-
-          <NavLink to="/jobs" className="nav-item">
-            <span>◉</span>
-            Jobs
-          </NavLink>
-
-          <NavLink to="/projects" className="nav-item">
-            <span>▣</span>
-            Projects
-          </NavLink>
-
-        </nav>
-
-        <div className="sidebar-divider"></div>
-
-        <nav className="secondary-navigation">
-
-          <NavLink to="/contact" className="nav-item">
-            <span>✉</span>
-            Contact
-          </NavLink>
-
-          <NavLink to="/request-tool" className="nav-item">
-            <span>＋</span>
-            Request Tool
-          </NavLink>
-
-          <NavLink to="/about" className="nav-item">
-            <span>ℹ</span>
-            About
-          </NavLink>
-
-        </nav>
-
-        <div className="sidebar-bottom">
-
-          <NavLink to="/settings" className="nav-item">
-            <span>⚙</span>
-            Settings
-          </NavLink>
-
-          <div className="user-profile">
-
-            <div className="user-avatar">
-              R
-            </div>
-
-            <div className="user-info">
-              <strong>Rakib</strong>
-              <span>Administrator</span>
-            </div>
-
-          </div>
-
-        </div>
-
-      </aside>
-
-
-      {/* Main Area */}
-      <main className="main-area">
-
-        {/* Top Header */}
-        <header className="top-header">
-
-          <div className="breadcrumb">
-            AutoLead
-          </div>
-
-          <div className="header-actions">
-
-            <button className="icon-button">
-              🔔
-            </button>
-
-            <div className="header-user">
-              <div className="small-avatar">
-                R
-              </div>
-
-              <span>Rakib</span>
-            </div>
-
-          </div>
-
-        </header>
-
-
-        {/* Page Content */}
-        <section className="page-content">
-
-          <Outlet />
-
-        </section>
-
-      </main>
-
-    </div>
-  );
+export default function Layout() {
+  const { user, logout } = useAuth(); const navigate = useNavigate(); const [open,setOpen]=useState(false);
+  function signOut(){logout();navigate("/login");}
+  return <div className="app-shell">
+    <button className="mobile-menu-button" aria-expanded={open} onClick={()=>setOpen(!open)}>☰</button>
+    <aside className={`sidebar ${open?"open":""}`}>
+      <div className="brand"><div className="brand-icon">◈</div><span>AutoLead</span></div>
+      <nav className="main-navigation">{links.map(([to,label,icon])=><NavLink key={to} to={to} end={to==="/"} className="nav-item" onClick={()=>setOpen(false)}><span>{icon}</span>{label}</NavLink>)}
+        {user?.is_admin&&<NavLink to="/admin" className="nav-item"><span>◆</span>Admin Dashboard</NavLink>}</nav>
+      <div className="sidebar-bottom"><button className="nav-item logout-button" onClick={signOut}><span>↪</span>Logout</button>
+        <div className="user-profile"><div className="user-avatar">{user?.name?.[0]?.toUpperCase()}</div>
+          <div className="user-info"><strong>{user?.name}</strong><span>{user?.is_admin?"Administrator":"User"}</span></div></div></div>
+    </aside>
+    <main className="main-area"><header className="top-header"><div className="breadcrumb">AutoLead</div>
+      <div className="header-user"><div className="small-avatar">{user?.name?.[0]?.toUpperCase()}</div><span>{user?.name}</span></div></header>
+      <section className="page-content"><Outlet/></section></main>
+  </div>;
 }
-
-export default Layout;

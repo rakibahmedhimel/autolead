@@ -1,9 +1,6 @@
-function Contact() {
-  return (
-    <div>
-      <h1>Settings</h1>
-    </div>
-  );
-}
-
-export default Contact;
+import {useState} from "react"; import api,{apiError} from "../api/client";
+export default function Contact(){const [form,setForm]=useState({name:"",email:"",subject:"",message:"",website:""}),[busy,setBusy]=useState(false),[notice,setNotice]=useState("");
+ async function submit(e){e.preventDefault();if(busy)return;try{setBusy(true);const r=await api.post("/contact",form);setNotice(r.data.message);setForm({name:"",email:"",subject:"",message:"",website:""});}catch(x){setNotice(apiError(x));}finally{setBusy(false)}}
+ return <main className="dashboard-page"><div className="eyebrow">AUTOLEAD / CONTACT</div><h1>Let’s <span>talk.</span></h1><p className="dashboard-description">Questions about the demo or a potential workflow? Send a message.</p>
+ <form className="glass-card generation-card" onSubmit={submit}><div className="form-grid">{["name","email","subject"].map(k=><div className="form-group" key={k}><label>{k}</label><input type={k==="email"?"email":"text"} required value={form[k]} onChange={e=>setForm({...form,[k]:e.target.value})}/></div>)}</div>
+ <input className="honeypot" tabIndex="-1" autoComplete="off" value={form.website} onChange={e=>setForm({...form,website:e.target.value})}/><div className="form-group"><label>Message</label><textarea required minLength="10" value={form.message} onChange={e=>setForm({...form,message:e.target.value})}/></div><button className="crystal-button" disabled={busy}>{busy?"Sending...":"Send Message"}</button>{notice&&<p>{notice}</p>}</form></main>}

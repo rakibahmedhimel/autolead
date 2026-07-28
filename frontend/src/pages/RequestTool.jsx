@@ -1,9 +1,5 @@
-function RequestTool() {
-  return (
-    <div>
-      <h1>Settings</h1>
-    </div>
-  );
-}
-
-export default RequestTool;
+import {useState} from "react";import api,{apiError} from "../api/client";
+export default function RequestTool(){const initial={tool_name:"",business_problem:"",desired_input:"",desired_output:"",additional_details:"",contact_preference:"email"},[form,setForm]=useState(initial),[busy,setBusy]=useState(false),[notice,setNotice]=useState("");
+ async function submit(e){e.preventDefault();if(busy)return;try{setBusy(true);const r=await api.post("/tool-requests",form);setNotice(r.data.message);setForm(initial);}catch(x){setNotice(apiError(x));}finally{setBusy(false)}}
+ return <main className="dashboard-page"><div className="eyebrow">AUTOLEAD / REQUEST TOOL</div><h1>Suggest the next <span>workflow.</span></h1><form className="glass-card generation-card" onSubmit={submit}>
+ {Object.keys(initial).map(k=><div className="form-group" key={k}><label>{k.replaceAll("_"," ")}</label>{k==="tool_name"||k==="contact_preference"?<input required={k==="tool_name"} value={form[k]} onChange={e=>setForm({...form,[k]:e.target.value})}/>:<textarea required={["business_problem","desired_input","desired_output"].includes(k)} value={form[k]} onChange={e=>setForm({...form,[k]:e.target.value})}/>}</div>)}<button className="crystal-button" disabled={busy}>{busy?"Submitting...":"Submit Request"}</button>{notice&&<p>{notice}</p>}</form></main>}

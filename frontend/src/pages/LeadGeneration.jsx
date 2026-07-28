@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import api, { apiError } from "../api/client";
 
@@ -26,6 +26,9 @@ function LeadGeneration() {
     const [refreshing, setRefreshing] = useState(false);
     const [enriching, setEnriching] = useState(false);
     const [error, setError] = useState("");
+    const projectSubmitGuard = useRef(false);
+    const jobSubmitGuard = useRef(false);
+    const jobIdempotencyKey = useRef(null);
 
     useEffect(() => {
         api.get("/projects/").then(({ data }) => setProjects(data))
@@ -42,7 +45,8 @@ function LeadGeneration() {
 
     async function handleCreateProject(event) {
         event.preventDefault();
-        if (!projectName.trim() || creatingProject) return;
+        if (!projectName.trim() || projectSubmitGuard.current) return;
+        projectSubmitGuard.current = true;
         try {
             setCreatingProject(true);
             setError("");
@@ -55,31 +59,38 @@ function LeadGeneration() {
             setProjectName("");
             setProjectDescription("");
         } catch (err) {
+            const existingId = err.response?.data?.detail?.existing_project_id;
+            if (existingId) setSelectedProjectId(String(existingId));
             setError(apiError(err, "Failed to create project."));
         } finally {
             setCreatingProject(false);
+            projectSubmitGuard.current = false;
         }
     }
 
     async function handleSubmit(event) {
         event.preventDefault();
-        if (loading) return;
+        if (jobSubmitGuard.current) return;
         if (!selectedProjectId) return setError("Please select or create a project.");
         if (!country) return setError("Please select a country.");
         if (!industries.length) return setError("Please select at least one industry.");
         try {
+            jobSubmitGuard.current = true;
             setLoading(true);
             setError("");
+            jobIdempotencyKey.current ||= crypto.randomUUID();
             const { data } = await api.post("/jobs/generate", {
                 project_id: Number(selectedProjectId), country,
                 province: province.trim() || null, industries,
                 lead_count: Number(leadCount),
-            });
+            }, { headers: { "Idempotency-Key": jobIdempotencyKey.current } });
             setActiveJob({ ...data, project_name: selectedProject?.name, companies_saved: 0 });
+            jobIdempotencyKey.current = null;
         } catch (err) {
             setError(apiError(err, "Failed to start lead generation."));
         } finally {
             setLoading(false);
+            jobSubmitGuard.current = false;
         }
     }
 

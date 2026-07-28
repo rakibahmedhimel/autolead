@@ -4,6 +4,9 @@ from sqlalchemy.orm import Session
 
 from backend.app.models.company import Company
 from backend.app.models.job import Job
+from backend.app.models.user_api_key import UserApiKey
+from backend.app.config import SYSTEM_FIRECRAWL_FALLBACK_ENABLED
+from backend.app.services.api_key_service import decrypt_key
 from backend.app.services.firecrawl import get_agent_status
 
 
@@ -53,7 +56,13 @@ def refresh_job(db: Session, job: Job) -> dict:
         }
 
     try:
-        result = get_agent_status(job.firecrawl_job_id)
+        key_row = db.query(UserApiKey).filter(
+            UserApiKey.user_id == job.user_id, UserApiKey.provider == "firecrawl"
+        ).first()
+        api_key = decrypt_key(key_row.encrypted_key) if key_row else None
+        if not api_key and not SYSTEM_FIRECRAWL_FALLBACK_ENABLED:
+            raise RuntimeError("No Firecrawl API key is configured for this account")
+        result = get_agent_status(job.firecrawl_job_id, api_key=api_key)
         status = str(result.get("status") or "processing").lower()
         if status in {"pending", "processing", "running", "queued"}:
             job.status = job.firecrawl_status = "processing"

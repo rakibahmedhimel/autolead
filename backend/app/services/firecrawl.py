@@ -9,16 +9,17 @@ FIRECRAWL_API_KEY = os.getenv("FIRECRAWL_API_KEY")
 BASE_URL = "https://api.firecrawl.dev/v2"
 
 
-def _headers():
-    if not FIRECRAWL_API_KEY:
+def _headers(api_key: str | None = None):
+    key = api_key or FIRECRAWL_API_KEY
+    if not key:
         raise RuntimeError("FIRECRAWL_API_KEY is not configured")
     return {
-        "Authorization": f"Bearer {FIRECRAWL_API_KEY}",
+        "Authorization": f"Bearer {key}",
         "Content-Type": "application/json",
     }
 
 
-def generate_leads(country: str, province: str | None, industries: list[str], lead_count: int):
+def generate_leads(country: str, province: str | None, industries: list[str], lead_count: int, api_key: str | None = None):
 
     industry_text = ", ".join(industries)
 
@@ -104,7 +105,7 @@ def generate_leads(country: str, province: str | None, industries: list[str], le
 
     response = requests.post(
         f"{BASE_URL}/agent",
-        headers=_headers(),
+        headers=_headers(api_key),
         json={
             "prompt": prompt,
             "schema": schema
@@ -118,11 +119,11 @@ def generate_leads(country: str, province: str | None, industries: list[str], le
 
 
 
-def get_agent_status(job_id: str):
+def get_agent_status(job_id: str, api_key: str | None = None):
 
     response = requests.get(
         f"{BASE_URL}/agent/{job_id}",
-        headers=_headers(),
+        headers=_headers(api_key),
         timeout=60
     )
 

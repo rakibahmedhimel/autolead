@@ -1,9 +1,9 @@
-function Settings() {
-  return (
-    <div>
-      <h1>Settings</h1>
-    </div>
-  );
-}
-
-export default Settings;
+import {useEffect,useState} from "react"; import api,{apiError} from "../api/client";
+export default function Settings(){const [status,setStatus]=useState(null),[key,setKey]=useState(""),[busy,setBusy]=useState(false),[notice,setNotice]=useState("");
+ const load=()=>api.get("/settings/firecrawl-key").then(r=>setStatus(r.data)); useEffect(()=>{load();},[]);
+ async function save(e){e.preventDefault();if(busy)return;try{setBusy(true);await api.put("/settings/firecrawl-key",{api_key:key});setKey("");setNotice("Key saved securely.");await load();}catch(x){setNotice(apiError(x));}finally{setBusy(false)}}
+ async function remove(){try{setBusy(true);await api.delete("/settings/firecrawl-key");setNotice("Key deleted.");await load();}finally{setBusy(false)}}
+ async function test(){try{setBusy(true);const r=await api.post("/settings/firecrawl-key/test");setNotice(r.data.valid?"Key is valid.":"Key is invalid.");}catch(x){setNotice(apiError(x));}finally{setBusy(false)}}
+ return <main className="dashboard-page"><button className="back-button" onClick={()=>location.assign("/")}>← Back to Dashboard</button><div className="eyebrow">AUTOLEAD / SETTINGS</div><h1>API key <span>settings.</span></h1>
+ <section className="glass-card generation-card"><h2>Firecrawl API Key</h2><p>Current source: {status?.source}. {status?.masked_key}</p><form onSubmit={save}><div className="form-group"><label>Add or replace key</label><input type="password" required value={key} onChange={e=>setKey(e.target.value)}/></div>
+ <div className="active-job-actions"><button className="crystal-button" disabled={busy}>Save Key</button>{status?.configured&&<><button type="button" className="secondary-button" onClick={test} disabled={busy}>Test Key</button><button type="button" className="secondary-button" onClick={remove} disabled={busy}>Delete Key</button></>}</div></form>{notice&&<p>{notice}</p>}</section></main>}

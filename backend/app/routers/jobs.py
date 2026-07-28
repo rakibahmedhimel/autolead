@@ -1,41 +1,64 @@
 from math import ceil
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, Header, HTTPException, Query
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy import func, or_
 from sqlalchemy.orm import Session
 
 from backend.app.database import get_db
+from backend.app.auth.security import get_current_user
+from backend.app.config import SYSTEM_FIRECRAWL_FALLBACK_ENABLED
 from backend.app.models.company import Company
 from backend.app.models.job import Job
 from backend.app.models.project import Project
+from backend.app.models.user import User
+from backend.app.models.user_api_key import UserApiKey
 from backend.app.schemas.companies import PaginatedCompanies
 from backend.app.schemas.job import JobResponse
 from backend.app.schemas.lead_request import LeadRequest
 from backend.app.services.firecrawl import generate_leads
 from backend.app.services.job_refresh_service import refresh_job, safe_error
 from backend.app.services.social_finder import find_social_links
+from backend.app.services.api_key_service import decrypt_key
 
 router = APIRouter(prefix="/jobs", tags=["Jobs"])
 
 
 @router.post("/generate")
-def generate_job(data: LeadRequest, db: Session = Depends(get_db)):
-    if not db.query(Project.id).filter(Project.id == data.project_id).first():
+def generate_job(data: LeadRequest, db: Session = Depends(get_db),
+                 user: User = Depends(get_current_user),
+                 idempotency_key: str = Header(..., alias="Idempotency-Key", min_length=8, max_length=100)):
+    existing = db.query(Job).filter(Job.user_id == user.id, Job.idempotency_key == idempotency_key).first()
+    if existing:
+        return {"job_id": existing.id, "firecrawl_job_id": existing.firecrawl_job_id,
+                "status": existing.status, "firecrawl_status": existing.firecrawl_status, "idempotent_replay": True}
+    if not db.query(Project.id).filter(Project.id == data.project_id, Project.user_id == user.id).first():
         raise HTTPException(status_code=404, detail="Selected project not found")
+    key_row = db.query(UserApiKey).filter(UserApiKey.user_id == user.id, UserApiKey.provider == "firecrawl").first()
+    api_key = decrypt_key(key_row.encrypted_key) if key_row else None
+    if not api_key and not SYSTEM_FIRECRAWL_FALLBACK_ENABLED:
+        raise HTTPException(status_code=422, detail="Add a Firecrawl API key in Settings before creating a job.")
 
     job = Job(
-        project_id=data.project_id, country=data.country,
+        project_id=data.project_id, user_id=user.id, idempotency_key=idempotency_key,
+        tool_type="lead_generation", country=data.country,
         province=data.province or None, industries=data.industries,
         lead_count=data.lead_count, status="processing",
         firecrawl_status="pending", firecrawl_error=None,
     )
     db.add(job)
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        existing = db.query(Job).filter(Job.user_id == user.id, Job.idempotency_key == idempotency_key).one()
+        return {"job_id": existing.id, "firecrawl_job_id": existing.firecrawl_job_id,
+                "status": existing.status, "firecrawl_status": existing.firecrawl_status, "idempotent_replay": True}
     db.refresh(job)
     try:
         result = generate_leads(
             country=data.country, province=data.province,
-            industries=data.industries, lead_count=data.lead_count,
+            industries=data.industries, lead_count=data.lead_count, api_key=api_key,
         )
         agent_id = result.get("id")
         if not agent_id:
@@ -57,12 +80,13 @@ def generate_job(data: LeadRequest, db: Session = Depends(get_db)):
 
 
 @router.get("/")
-def get_jobs(db: Session = Depends(get_db), page: int = Query(1, ge=1),
+def get_jobs(db: Session = Depends(get_db), user: User = Depends(get_current_user), page: int = Query(1, ge=1),
              limit: int = Query(10, ge=1, le=50)):
-    total = db.query(Job).count()
+    total = db.query(Job).filter(Job.user_id == user.id).count()
     rows = (
         db.query(Job, func.count(Company.id).label("company_count"))
         .outerjoin(Company, Company.job_id == Job.id)
+        .filter(Job.user_id == user.id)
         .group_by(Job.id).order_by(Job.created_at.desc())
         .offset((page - 1) * limit).limit(limit).all()
     )
@@ -78,9 +102,9 @@ def get_jobs(db: Session = Depends(get_db), page: int = Query(1, ge=1),
 
 
 @router.post("/refresh-pending")
-def refresh_pending(db: Session = Depends(get_db), limit: int = Query(20, ge=1, le=50)):
+def refresh_pending(db: Session = Depends(get_db), user: User = Depends(get_current_user), limit: int = Query(20, ge=1, le=50)):
     jobs = (
-        db.query(Job).filter(or_(
+        db.query(Job).filter(Job.user_id == user.id, or_(
             Job.status == "processing",
             Job.firecrawl_status.in_(["pending", "processing"]),
         )).order_by(Job.created_at.asc()).limit(limit).all()
@@ -103,16 +127,16 @@ def refresh_pending(db: Session = Depends(get_db), limit: int = Query(20, ge=1, 
 
 
 @router.post("/{job_id}/refresh")
-def refresh_single_job(job_id: int, db: Session = Depends(get_db)):
-    job = db.query(Job).filter(Job.id == job_id).first()
+def refresh_single_job(job_id: int, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+    job = db.query(Job).filter(Job.id == job_id, Job.user_id == user.id).first()
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
     return refresh_job(db, job)
 
 
 @router.get("/{job_id}/firecrawl-status")
-def firecrawl_status_read_only(job_id: int, db: Session = Depends(get_db)):
-    job = db.query(Job).filter(Job.id == job_id).first()
+def firecrawl_status_read_only(job_id: int, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+    job = db.query(Job).filter(Job.id == job_id, Job.user_id == user.id).first()
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
     return {
@@ -123,8 +147,9 @@ def firecrawl_status_read_only(job_id: int, db: Session = Depends(get_db)):
 
 @router.post("/{job_id}/enrich")
 def enrich_job(job_id: int, db: Session = Depends(get_db),
+               user: User = Depends(get_current_user),
                limit: int = Query(5, ge=1, le=20)):
-    if not db.query(Job.id).filter(Job.id == job_id).first():
+    if not db.query(Job.id).filter(Job.id == job_id, Job.user_id == user.id).first():
         raise HTTPException(status_code=404, detail="Job not found")
     candidates = (
         db.query(Company).filter(
@@ -165,8 +190,8 @@ def enrich_job(job_id: int, db: Session = Depends(get_db),
 
 
 @router.get("/{job_id}/enrichment-progress")
-def enrichment_progress(job_id: int, db: Session = Depends(get_db)):
-    if not db.query(Job.id).filter(Job.id == job_id).first():
+def enrichment_progress(job_id: int, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+    if not db.query(Job.id).filter(Job.id == job_id, Job.user_id == user.id).first():
         raise HTTPException(status_code=404, detail="Job not found")
     rows = db.query(Company.enrichment_status, func.count(Company.id)).filter(
         Company.job_id == job_id
@@ -180,8 +205,9 @@ def enrichment_progress(job_id: int, db: Session = Depends(get_db)):
 
 @router.get("/{job_id}/companies", response_model=PaginatedCompanies)
 def get_job_companies(job_id: int, db: Session = Depends(get_db),
+                      user: User = Depends(get_current_user),
                       page: int = Query(1, ge=1), limit: int = Query(10, ge=1, le=100)):
-    if not db.query(Job.id).filter(Job.id == job_id).first():
+    if not db.query(Job.id).filter(Job.id == job_id, Job.user_id == user.id).first():
         raise HTTPException(status_code=404, detail="Job not found")
     query = db.query(Company).filter(Company.job_id == job_id)
     total = query.count()
@@ -193,8 +219,8 @@ def get_job_companies(job_id: int, db: Session = Depends(get_db),
 
 
 @router.get("/{job_id}", response_model=JobResponse)
-def get_job(job_id: int, db: Session = Depends(get_db)):
-    job = db.query(Job).filter(Job.id == job_id).first()
+def get_job(job_id: int, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+    job = db.query(Job).filter(Job.id == job_id, Job.user_id == user.id).first()
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
     return job

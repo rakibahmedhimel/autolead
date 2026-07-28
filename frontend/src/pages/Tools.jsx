@@ -61,7 +61,7 @@ function Tools() {
                 </div>
 
 
-                <div className="tool-card glass-card tool-card-disabled">
+                <div className="tool-card glass-card">
 
                     <div className="tool-card-icon">
                         ◌
@@ -70,11 +70,11 @@ function Tools() {
                     <div className="tool-card-content">
 
                         <div className="eyebrow">
-                            COMING SOON
+                            DATA ENRICHMENT
                         </div>
 
                         <h2>
-                            AI Data Enrichment
+                            Spreadsheet Enrichment
                         </h2>
 
                         <p>
@@ -82,12 +82,7 @@ function Tools() {
                             information using intelligent data sources.
                         </p>
 
-                        <button
-                            className="crystal-button"
-                            disabled
-                        >
-                            Coming Soon
-                        </button>
+                        <Link to="/tools/spreadsheet-enrichment" className="crystal-button">Open Tool →</Link>
 
                     </div>
 

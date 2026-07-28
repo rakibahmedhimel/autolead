@@ -1,10 +1,4 @@
-function About() {
-  return (
-    <div>
-      <h1>About AutoLead</h1>
-      <p>About page coming soon.</p>
-    </div>
-  );
-}
-
-export default About;
+export default function About(){return <main className="dashboard-page"><div className="eyebrow">AUTOLEAD / ABOUT</div><h1>Business research, <span>organized.</span></h1>
+ <section className="glass-card generation-card"><h2>What AutoLead does</h2><p>AutoLead is an internal SaaS demonstration that organizes public-business research into shared projects and traceable jobs. Lead-generation jobs start a Firecrawl agent, then users manually refresh results before saving companies.</p>
+ <h2>Spreadsheet enrichment</h2><p>CSV and Excel data can be mapped and enriched in resumable batches. Existing values are preserved, successful additions are evidenced and charged once, and files remain available in familiar formats.</p>
+ <h2>Privacy and limitations</h2><p>The application is intended to process public business information. Results depend on source availability and are not guaranteed accurate. This demo uses synchronous bounded batches; production direction includes stronger observability, billing controls and managed background execution.</p></section></main>}

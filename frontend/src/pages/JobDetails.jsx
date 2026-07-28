@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import api, { apiError } from "../api/client";
 
 function JobDetails() {
-    const { jobId } = useParams();
+    const { jobId, projectId } = useParams();
     const [job, setJob] = useState(null);
     const [companies, setCompanies] = useState([]);
     const [companyPage, setCompanyPage] = useState(1);
@@ -67,7 +67,7 @@ function JobDetails() {
 
     return (
         <main className="job-details-page">
-            <Link to="/jobs" className="back-link">← Back to Jobs</Link>
+            <Link to={projectId ? `/projects/${projectId}` : "/jobs"} className="back-link">← Back to {projectId ? "Project" : "Jobs"}</Link>
             <div className="job-details-header"><div><div className="eyebrow">AUTOLEAD / JOB</div><h1>Job #{job.id}</h1>
                 <p>{job.country}{job.province ? ` · ${job.province}` : ""}</p></div>
                 <div className="job-detail-actions">

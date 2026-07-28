@@ -316,6 +316,7 @@ function ProjectDetails() {
                     + New Lead Job
 
                 </Link>
+                <Link to={`/projects/${project.id}/jobs`} className="secondary-button">View Jobs</Link>
 
 
             </div>
